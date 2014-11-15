@@ -44,7 +44,7 @@ library(dplyr)
 
 ## Loading and preprocessing the data 
 
-We first load the data and convert it to a plyr data table. 
+I first load the data and convert it to a plyr data table. 
 The data is downloaded (and unzipped) from the URL: 
 [Activity Monitoring Dataset]
 (https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip).
@@ -59,7 +59,7 @@ performed, but only 53 days that have at least some step data.
 Some days have no data at all, for instance, October 1, 2012 and
 November 4, 2012.
 
-We coerce the date field to be date objects instead of factors. We
+I coerce the date field to be date objects instead of factors. I
 also create a clean dataset that is the original dataset with all of
 the missing data removed. Further, we create two grouped datasets,
 grouped by date and by interval, for later analysis.
@@ -77,6 +77,10 @@ by_interval <- group_by(cleanDataset, interval)
 ```
 
 ## What is the mean number of steps per day?
+First I create a histogram of the total number of steps taken per day. This
+is shown in the figure below. Missing data is ignored for this part of the
+analysis since there are certain days that have no data.
+ 
 
 ```r
 spd <- summarize(by_date,spd=sum(steps))
@@ -91,9 +95,17 @@ abline(v=median, col='red', lwd=3)
 
 ![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png) 
 
-```r
-##  what is the average daily activity pattern?
-```
+The mean number of steps per day is 1.0766189 &times; 10<sup>4</sup> and the median number of steps
+per day is 10765. These values are indicated by vertical lines in the
+plot above. Since they are very close to eachother, they can not be differentiated
+from each other on the plot.
+
+##  What is the average daily activity pattern?
+To compute the average pattern of daily activity, namely the number of steps for
+each interval averaged over each day, I first group the data by interval using
+the clean dataset (with no missing values), and compute the mean of each group.
+This is then plotted below.
+
 
 ```r
 aspi <- summarize(by_interval, aspi=mean(steps))
@@ -104,16 +116,40 @@ xlab <- 'Interval'
 ylab <- 'Average Number of Steps'
 plot(aspi$interval, aspi$aspi, type=type, main=title, xlab=xlab, ylab=ylab)
 abline(v=intervalAtMax, col='blue', lwd=3)
-text(1800, 150, paste('Interval with maximum average number of steps: ', 
+text(1800, 150, paste('Interval with maximum average \n number of steps: ', 
                       as.character(intervalAtMax)))
 ```
 
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png) 
 
-##  fill in missing data
+The interval with the maximum average number of steps is given by 835,
+corresponding to a maximun value of 206.1698113.  This interval is indicated 
+on the plot with a vertical blue line. 
+
+
+## Imputing missing values
+There are 2304 missing observations in this dataset, which will
+introduce biases into the analysis. I replace these missing values with the mean
+value for that interval, calculated without the missing data (in the previous
+section). It is not possible to replace the missing values with the average for
+that particular day (another fine strategy) because there are entire days with
+missing values.
+
 
 ```r
 numMissingValues <- sum(isMissing)
-spd$date <- as.Date(spd$date)
+for (i in 1:length(dataset$steps)) {
+ if (is.na(dataset$steps[i])) {
+   dataset$steps[i] <- aspi$aspi[aspi$interval == dataset$interval[i]]
+  }
+aspi2 <- summarize(by_interval, aspi2=mean(steps))
+plot(aspi2$interval, aspi2$aspi2, type=type, main=title, xlab=xlab, ylab=ylab)
+}
 ```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+
 
